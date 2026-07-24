@@ -31,6 +31,7 @@ Use this skill as the fast onboarding guide for Campwise. Treat the repository s
 2. Run `npm run db:generate` after schema changes and inspect the SQL.
 3. Run `npm run lint`, `npm test`, and fix real failures.
 4. Because `.openai/hosting.json` exists, use the Sites build and hosting workflow unless the user explicitly asks for local-only work.
-5. Update `references/project-map.md` whenever architecture, persistence, routes, core invariants, or major features change.
+5. Capture durable lessons before handoff: update `references/project-map.md` for architecture, persistence, routes, core invariants, or major features; update this `SKILL.md` for reusable workflow improvements. Add only specific guidance that future agents would not otherwise know.
+6. Version skill changes first in the `darmi1337/skills` repository, then update and commit Campwise's `.agents/skills` submodule pointer in the corresponding Campwise change.
 
 Do not commit, push, or open a pull request unless the user asks.
