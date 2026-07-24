@@ -27,8 +27,10 @@ Guest visitors see realistic in-memory demo data. Signed-in users read and write
 
 | Concern | Source |
 | --- | --- |
-| English page and authenticated user bootstrap | `app/page.tsx` |
-| Lithuanian page | `app/lt/page.tsx` |
+| English landing page | `app/page.tsx`, `app/LandingPage.tsx` |
+| Lithuanian landing page | `app/lt/page.tsx`, `app/LandingPage.tsx` |
+| English authenticated planner | `app/planner/page.tsx` |
+| Lithuanian authenticated planner | `app/lt/planner/page.tsx` |
 | Product UI, demo state, locale copy, client actions | `app/PlannerApp.tsx` |
 | Global responsive styling | `app/globals.css` |
 | Planner API and runtime schema initialization | `app/api/planner/route.ts` |
@@ -42,7 +44,10 @@ Guest visitors see realistic in-memory demo data. Signed-in users read and write
 
 ## State and request flow
 
-`app/page.tsx` or `app/lt/page.tsx` gets the platform-authenticated user and renders `PlannerApp`.
+`app/page.tsx` and `app/lt/page.tsx` render the public Campwise landing page.
+
+The planner is available at `/planner` and `/lt/planner`. Those route pages get
+the platform-authenticated user and render `PlannerApp`.
 
 For a signed-in user:
 
