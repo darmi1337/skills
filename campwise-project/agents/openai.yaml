@@ -1,0 +1,4 @@
+interface:
+  display_name: "Campwise Project"
+  short_description: "Architecture and workflows for Campwise"
+  default_prompt: "Use $campwise-project to continue developing the Campwise camping planner."
