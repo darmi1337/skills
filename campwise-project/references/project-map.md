@@ -27,9 +27,11 @@ Guest visitors see realistic in-memory demo data. Signed-in users read and write
 
 | Concern | Source |
 | --- | --- |
-| English page and authenticated user bootstrap | `app/page.tsx` |
+| English page and authenticated user bootstrap | `app/(en)/page.tsx` |
 | Lithuanian page | `app/lt/page.tsx` |
+| Locale root layouts and metadata | `app/(en)/layout.tsx`, `app/lt/layout.tsx`, `app/site-metadata.ts`, `app/site-fonts.ts` |
 | Product UI, demo state, locale copy, client actions | `app/PlannerApp.tsx` |
+| Catalog, localized display helpers, shared validation and assignment | `app/planner-domain.ts` |
 | Global responsive styling | `app/globals.css` |
 | Planner API and runtime schema initialization | `app/api/planner/route.ts` |
 | ChatGPT header-based identity | `app/chatgpt-auth.ts` |
@@ -42,7 +44,7 @@ Guest visitors see realistic in-memory demo data. Signed-in users read and write
 
 ## State and request flow
 
-`app/page.tsx` or `app/lt/page.tsx` gets the platform-authenticated user and renders `PlannerApp`.
+`app/(en)/page.tsx` or `app/lt/page.tsx` gets the platform-authenticated user and renders `PlannerApp`.
 
 For a signed-in user:
 
@@ -52,15 +54,15 @@ For a signed-in user:
 4. The route validates authentication, body size, origin, action inputs, and trip membership.
 5. After a successful mutation, the client refreshes the entire planner state.
 
-For a guest, `PlannerApp` uses `demoState`; attempting a mutation redirects to ChatGPT sign-in.
+For a guest, `PlannerApp` uses `demoState`; attempting a mutation opens the sign-in dialog and keeps entered form data out of URLs.
 
 ## Current data model
 
 - `profiles`: identity display data keyed by email.
 - `inventory`: personal gear owned by one profile.
 - `trips`: trip metadata, owner, dates, and unique join code.
-- `trip_members`: composite key of trip and member email; also snapshots display names.
-- `needs`: shared trip checklist items, assignee, and packed state.
+- `trip_members`: composite key of trip and member email; snapshots display names and retains `active` or `left` status with a leave timestamp.
+- `needs`: shared trip checklist items, optional stable `catalog_key`, assignee, and packed state.
 - `expenses`: a trip basket with payer, description, integer euro cents, and timestamp.
 - `expense_participants`: participant snapshot for each expense. This prevents a later joiner from being charged for earlier baskets.
 
@@ -69,7 +71,8 @@ All monetary values are integer cents. Do not calculate or persist money with fl
 ## Expense settlement rules
 
 - A camper can add a basket only as themselves; the server derives `paid_by_email` from authentication.
-- A new basket is split across every current trip member and snapshots those emails.
+- A new basket is split across every active trip member and snapshots those emails.
+- Former members remain visible in historical balances, participants, and settlements; never delete their membership snapshot when they leave.
 - Only the payer can remove their basket.
 - `calculateExpenseSummary()` assigns remainder cents deterministically by sorted participant email, then matches debtors to creditors into a compact repayment list.
 - The total of all balances must equal zero cents.
@@ -79,7 +82,10 @@ All monetary values are integer cents. Do not calculate or persist money with fl
 
 - Brand palette and responsive layout tokens live in `app/globals.css`.
 - Desktop navigation is in the forest sidebar; mobile navigation is sticky below the top bar.
-- Use Barlow Condensed for display headings and DM Sans for body text through CSS variables from `app/layout.tsx`.
+- Use Barlow Condensed for display headings and DM Sans for body text through shared locale-root font helpers.
+- Use native dialog primitives for forms, confirmations, and the mobile More drawer; return focus to the opener and expose all controls with accessible names.
+- Keep archive trips read-only. Owners may restore or permanently delete them; former members cannot be assigned new needs.
+- Use the shared catalog and assignment helpers rather than display-name comparisons. Inventory only covers a need when category, compatible unit, and sufficient quantity all match.
 - Keep touch targets, labels, disabled states, empty states, and narrow mobile layouts.
 - Avoid introducing a component library unless the existing design can no longer support the requested interaction.
 - Maintain translations in the `translations` object and server error translations in `ltErrors`.
@@ -89,7 +95,7 @@ All monetary values are integer cents. Do not calculate or persist money with fl
 - Trust only the `oai-authenticated-user-*` headers read by `getChatGPTUser()`.
 - Retain same-origin rejection for API writes.
 - Use prepared D1 statements and one SQL statement per `prepare()` call.
-- Check `isMember(tripId, user.email)` before trip-scoped mutations.
+- Check active membership before ordinary trip-scoped mutations, check ownership for trip lifecycle mutations, and reject ordinary mutations on archived trips.
 - Bound request bodies and clean all text.
 - Never expose D1 bindings, credentials, internal ids, or authentication headers to the client.
 - Preserve the baseline security headers set in `worker/index.ts`.
@@ -98,7 +104,7 @@ All monetary values are integer cents. Do not calculate or persist money with fl
 
 - `npm run db:generate`: generate SQL after schema changes.
 - `npm run lint`: lint TypeScript and React.
-- `npm test`: production build plus rendered-product checks.
+- `npm test`: production build plus rendered-product and domain checks.
 - Business logic tests use Node's test runner under `tests/`.
 - Inspect generated migration SQL before deployment.
 
